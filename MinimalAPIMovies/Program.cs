@@ -44,14 +44,17 @@ app.UseOutputCache();
 
 app.MapGet("/", [EnableCors(policyName: "Allow")] () => "Hello World!");
 
-app.MapGet("/genders", async (IRepositoryGender repository) => 
+var endpointGeneros = app.MapGroup("genders");
+
+
+endpointGeneros.MapGet("/", async (IRepositoryGender repository) => 
 {
     List<Gender> genders = await repository.GetAll();
     return Results.Ok(genders);
 
 }).CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("genders-get"));
 
-app.MapGet("/genders/{id:int}", async (int id, IRepositoryGender repository) =>
+endpointGeneros.MapGet("/{id:int}", async (int id, IRepositoryGender repository) =>
 {
     var gender = await repository.GetGenderById(id);
 
@@ -63,14 +66,14 @@ app.MapGet("/genders/{id:int}", async (int id, IRepositoryGender repository) =>
     return Results.Ok(gender);
 });
 
-app.MapPost("/gender", async (Gender gender, IRepositoryGender repository, IOutputCacheStore outputCacheStore) =>
+endpointGeneros.MapPost("/", async (Gender gender, IRepositoryGender repository, IOutputCacheStore outputCacheStore) =>
 {
     var id = await repository.Create(gender);
     await outputCacheStore.EvictByTagAsync("genders-get", default);
     return Results.Created($"/genders/{id}", gender);
-}); 
+});
 
-app.MapPut("/genders/{id:int}", async (int id, Gender gender, IRepositoryGender repository, IOutputCacheStore outputCacheStore) =>
+endpointGeneros.MapPut("/{id:int}", async (int id, Gender gender, IRepositoryGender repository, IOutputCacheStore outputCacheStore) =>
 {
     var exist = await repository.Exists(id);
 
@@ -84,7 +87,7 @@ app.MapPut("/genders/{id:int}", async (int id, Gender gender, IRepositoryGender 
     return Results.NoContent();
 });
 
-app.MapDelete("/genders/{id:int}", async (int id, IRepositoryGender repository, IOutputCacheStore outputCacheStore) =>
+endpointGeneros.MapDelete("/{id:int}", async (int id, IRepositoryGender repository, IOutputCacheStore outputCacheStore) =>
 {
     var exist = await repository.Exists(id);
 
